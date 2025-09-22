@@ -219,13 +219,13 @@ int main ()
   * create pid (pid_steer) for steer command and initialize values
   **/
   PID pid_steer = PID();
-  // - PID controller for steering: Init(0.2, 0.004, 3.0, 1.2, -1.2)
-  // - Kp=0.2: Proportional gain for immediate response to steering error
-  // - Ki=0.004: Small integral gain to eliminate steady-state steering bias
-  // - Kd=3.0: High derivative gain for smooth steering response and stability
-  // - output_lim_max=1.2: Maximum steering output (beyond normal ±1.0 for safety margin)
-  // - output_lim_min=-1.2: Minimum steering output (symmetric limits)
-  pid_steer.Init(0.2, 0.004, 3.0, 1.2, -1.2);
+  // - PID controller for steering: 
+  // Low Kp and Low Kd for a stable steering and quick change
+  // Low Ki to prevent collision in emergency
+  // +/-1.5 to allow sharper turns
+  // pid_steer.Init(0.2, 0.0001, 0.25, 1.2, -1.2); --> Collision
+  // pid_steer.Init(0.3, 0.001, 0.5, 1.2, -1.2);   --- Collison
+  pid_steer.Init(0.2, 0.001, 0.3, 1.2, -1.2);  
 
   // initialize pid throttle
   /**
@@ -233,12 +233,11 @@ int main ()
   **/
   PID pid_throttle = PID();
   // - PID controller for throttle: Init(0.3, 0.0001, 0.02, 1.0, -1.0)
-  // - Kp=0.3: Proportional gain for responsive throttle control
-  // - Ki=0.0001: Very small integral gain to avoid steady-state speed error
-  // - Kd=0.02: Low derivative gain for smooth throttle adjustments
-  // - output_lim_max=1.0: Maximum throttle output (full throttle)
-  // - output_lim_min=-1.0: Minimum throttle output (full braking)
-  pid_throttle.Init(0.3, 0.0001, 0.02, 1.0, -1.0);
+  // Moderate Kp and Low Kd to avoid jerky movements and controlled speed changes
+  // Min Ki to prevent overshoot
+  // Aysmmetric limits to have more braking power and less speed (safety)
+  //pid_throttle.Init(0.3, 0.0001, 0.1, 1.0, -1.0); --> Collision
+  pid_throttle.Init(0.5, 0.0005, 0.1, 0.8, -1.2);
 
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &timer, &prev_timer, &i, &prev_timer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
@@ -312,7 +311,9 @@ int main ()
           /**
           * TODO (step 3): compute the steer error (error_steer) from the position and the desired trajectory
           **/
-          error_steer = 0;
+
+          // Angle between last two points in the list, compensated for yaw          
+          error_steer = angle_between_points(x_position, y_position, x_points[x_points.size()-1], y_points[y_points.size()-1]) - yaw;
 
           /**
           * TODO (step 3): uncomment these lines
@@ -346,7 +347,7 @@ int main ()
           * TODO (step 2): compute the throttle error (error_throttle) from the position and the desired speed
           **/
           // modify the following line for step 2
-          error_throttle = 0;
+          error_throttle = v_points[v_points.size()-1] - velocity;
 
 
 
