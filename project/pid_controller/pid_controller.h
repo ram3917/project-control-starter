@@ -59,6 +59,33 @@ public:
     * Update the delta time.
     */
     double UpdateDeltaTime(double new_delta_time);
+
+private:
+    /*
+    * Errors
+    */
+    double p_error_;
+    double i_error_;
+    double d_error_;
+    double prev_cte_;
+
+    /*
+    * Coefficients
+    */
+    double Kp_;
+    double Ki_;
+    double Kd_;
+
+    /*
+    * Output limits
+    */
+    double output_lim_max_;
+    double output_lim_min_;
+  
+    /*
+    * Delta time
+    */
+    double delta_time_;
 };
 
 #endif //PID_CONTROLLER_H
